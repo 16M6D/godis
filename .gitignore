@@ -1,0 +1,15 @@
+# Build outputs
+/godis
+*.exe
+*.out
+
+# Go build cache
+/.gocache/
+
+# Local tool metadata
+/.codex
+
+# Editor files
+/.idea/
+/.vscode/
+.DS_Store
