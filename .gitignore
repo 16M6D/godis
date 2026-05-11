@@ -13,3 +13,6 @@
 /.idea/
 /.vscode/
 .DS_Store
+
+# Go vendor
+/vendor/
