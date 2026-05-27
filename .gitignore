@@ -16,3 +16,6 @@
 
 # Go vendor
 /vendor/
+
+# AI coding
+AGENTS.md
