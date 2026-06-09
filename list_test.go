@@ -231,9 +231,9 @@ func TestDelete(t *testing.T) {
 
 func TestMixedAppendLPush(t *testing.T) {
 	l := ListCreate(strListType())
-	l.Append(makeStrObj("a"))   // a
-	l.LPush(makeStrObj("b"))    // b -> a
-	l.Append(makeStrObj("c"))   // b -> a -> c
+	l.Append(makeStrObj("a")) // a
+	l.LPush(makeStrObj("b"))  // b -> a
+	l.Append(makeStrObj("c")) // b -> a -> c
 
 	if l.Length() != 3 {
 		t.Fatalf("expected length 3, got %d", l.Length())

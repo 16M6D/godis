@@ -43,8 +43,8 @@ type AeTimeEvent struct {
 
 type AeLoop struct {
 	FileEvents      map[int]*AeFileEvent // key <- getFeKey(), r/w event for same fd store in different key
-	TimeEvents      *AeTimeEvent	// list head
-	fileEventFd     int // epoll fd
+	TimeEvents      *AeTimeEvent         // list head
+	fileEventFd     int                  // epoll fd
 	timeEventNextId int
 	stop            bool
 }
@@ -180,7 +180,7 @@ func (loop *AeLoop) nearestTime() int64 {
 	return nearest // can not epoll_wait forever, u need to set a timeout
 }
 
-// 3 of the core func of ae.go in a roll  
+// 3 of the core func of ae.go in a roll
 func (loop *AeLoop) AeWait() (tes []*AeTimeEvent, fes []*AeFileEvent) {
 	timeout := loop.nearestTime() - GetMsTime()
 	if timeout <= 0 {
