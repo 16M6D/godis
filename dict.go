@@ -164,14 +164,14 @@ func (dict *Dict) AddRaw(key *Gobj) *Entry {
 	if dict.isRehashing() {
 		dict.rehashStep()
 	}
-	idx := dict.keyIndex(key)
+	idx := dict.keyIndex(key) // if key exist
 	if idx == -1 {
 		return nil
 	}
 	// add key & return entry
 	var ht *htable
 	if dict.isRehashing() {
-		ht = dict.hts[1]
+		ht = dict.hts[1] // add in ht[1] when rehash
 	} else {
 		ht = dict.hts[0]
 	}

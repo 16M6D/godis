@@ -67,6 +67,8 @@ var cmdTable []GodisCommand = []GodisCommand{
 	{"get", getCommand, 2},
 	{"set", setCommand, 3},
 	{"expire", expireCommand, 3},
+	{"ping", pingCommand, 1},
+	{"command", commandCommand, -1},
 	//TODO
 }
 
@@ -100,7 +102,7 @@ func getCommand(c *GodisClient) {
 		c.AddReplyStr("-ERR: wrong type\r\n") // use other cmd such as "hget"
 	} else {
 		str := val.StrVal()
-		c.AddReplyStr(fmt.Sprintf("$%d%v\r\n", len(str), str)) // follow RESP
+		c.AddReplyStr(fmt.Sprintf("$%d\r\n%v\r\n", len(str), str)) // follow RESP
 	}
 }
 
@@ -130,10 +132,19 @@ func expireCommand(c *GodisClient) {
 	c.AddReplyStr("+OK\r\n")
 }
 
+func pingCommand(c *GodisClient) {
+	c.AddReplyStr("+PONG\r\n")
+}
+
+func commandCommand(c *GodisClient) {
+	// return an empty array/map for all COMMAND subcommands,
+	// just to prevent redis-cli from degrading to basic mode
+	c.AddReplyStr("*0\r\n")
+}
+
 func lookupCommand(cmdStr string) *GodisCommand {
-	//TODO: case sensitive
 	for _, c := range cmdTable {
-		if c.name == cmdStr {
+		if strings.EqualFold(c.name, cmdStr) {
 			return &c
 		}
 	}
@@ -155,17 +166,17 @@ func (c *GodisClient) AddReplyStr(str string) {
 func ProcessCommand(c *GodisClient) {
 	cmdStr := c.args[0].StrVal()
 	log.Printf("process command: %v\n", cmdStr)
-	if cmdStr == "quit" {
+	if strings.EqualFold(cmdStr, "quit") {
 		freeClient(c)
 		return
 	}
 	cmd := lookupCommand(cmdStr)
 	if cmd == nil {
-		c.AddReplyStr("-ERR: unknow command")
+		c.AddReplyStr("-ERR: unknow command\r\n")
 		resetClient(c)
 		return
-	} else if cmd.arity != len(c.args) {
-		c.AddReplyStr("-ERR: wrong number of args")
+	} else if cmd.arity > 0 && cmd.arity != len(c.args) {
+		c.AddReplyStr("-ERR: wrong number of args\r\n")
 		resetClient(c)
 		return
 	}
@@ -177,6 +188,7 @@ func freeArgs(client *GodisClient) {
 	for _, v := range client.args {
 		v.DecrRefCount()
 	}
+	client.args = nil
 }
 
 func freeReplyList(client *GodisClient) {

@@ -11,12 +11,11 @@
 ## Quick Start
 ```shell
 go build . 
-./godis            # 默认使用 ./conf.json
-./godis conf.json   # 指定配置文件
+./godis # 默认使用conf.json
+./godis conf.json # 指定config路径
 
 # 支持redis-cli使用
-redis-cli -p 8899
-
+redis-cli -p 6657
 ```
 
 
@@ -31,23 +30,8 @@ redis-cli -p 8899
 - TCP 服务与客户端连接处理
 - 过期键管理
 - 持久化或其他扩展能力
-
-## 目标特性
-
-后续可以逐步支持以下能力：
-
-- `SET` / `GET` 等基础字符串命令
-- `DEL` / `EXISTS` 等通用命令
-- `EXPIRE` / `TTL` 等过期时间控制
-- List、Hash、Set 等常见数据结构
-- 简单持久化机制
-- 发布订阅
-- 主从复制的简化实现
-
-## 为什么叫 godis
-
-项目名 `godis` 表示 “Go + Redis” 风格的实现思路，通常用于表达一个 Redis 风格的自研项目。  
-即使后续不局限于某一种语言，这个名字依然适合表示一个 Redis-like 的实验性实现。
+- 主从复制
+- cluster模式
 
 ## 项目说明
 
@@ -58,8 +42,6 @@ redis-cli -p 8899
 - 易于理解和扩展的实现方式
 
 随着开发推进，项目结构、支持命令和运行方式会逐步补充。
-
-## 免责声明
 
 本项目是一个学习性 / 实验性项目，不以完全兼容官方 Redis 为目标。  
 如果你需要生产级 Redis 功能，请使用官方 Redis：
