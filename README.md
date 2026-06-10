@@ -8,6 +8,18 @@
 - 理解高性能缓存系统设计的实验项目
 - 练习网络编程、数据结构与并发处理的实践项目
 
+## Quick Start
+```shell
+go build . 
+./godis            # 默认使用 ./conf.json
+./godis conf.json   # 指定配置文件
+
+# 支持redis-cli使用
+redis-cli -p 8899
+
+```
+
+
 ## 项目定位
 
 这是一个 **类 Redis（Redis-like）** 项目，而不是 Redis 的完整实现。  

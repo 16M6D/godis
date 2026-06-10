@@ -10,6 +10,13 @@ type Config struct {
 	Port int `json:"port"`
 }
 
+func GetConfigPath() string {
+	if len(os.Args) > 1 {
+		return os.Args[1]
+	}
+	return "./conf.json"
+}
+
 func LoadConfig(path string) (config *Config, err error) {
 	file, err := os.Open(path)
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -461,10 +460,9 @@ func initServer(config *Config) error {
 }
 
 func main() {
-	path := os.Args[1]
-	config, err := LoadConfig(path)
+	config, err := LoadConfig(GetConfigPath())
 	if err != nil {
-		log.Printf("config error: %v\n", err)
+		log.Fatalf("config error: %v\n", err)
 	}
 	err = initServer(config)
 	if err != nil {
@@ -472,6 +470,6 @@ func main() {
 	}
 	server.aeLoop.AddFileEvent(server.fd, AE_READABLE, AcceptHandler, nil)
 	server.aeLoop.AddTimeEvent(AE_NORMAL, 100, ServerCron, nil)
-	log.Println("godis server is up.")
+	log.Println("godis server is up, running on 6657.")
 	server.aeLoop.AeMain()
 }
