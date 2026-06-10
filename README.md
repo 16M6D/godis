@@ -11,8 +11,8 @@
 ## Quick Start
 ```shell
 go build . 
-./godis # 默认使用conf.json
-./godis conf.json # 指定config路径
+./godis # 默认使用 ./conf.json
+./godis conf.json # 指定配置文件
 
 # 支持redis-cli使用
 redis-cli -p 6657

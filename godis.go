@@ -69,7 +69,7 @@ var cmdTable []GodisCommand = []GodisCommand{
 	{"expire", expireCommand, 3},
 	{"ping", pingCommand, 1},
 	{"command", commandCommand, -1},
-	//TODO
+	//TODO: add more commands here
 }
 
 func expireIfNeeded(key *Gobj) {
