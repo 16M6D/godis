@@ -188,8 +188,8 @@ func (loop *AeLoop) AeWait() (tes []*AeTimeEvent, fes []*AeFileEvent) {
 	}
 	var events [128]unix.EpollEvent
 	n, err := unix.EpollWait(loop.fileEventFd, events[:], int(timeout))
-	if err != nil {
-		log.Printf("epoll wait warnning: %v\n", err)
+	if err != nil && err != unix.EINTR {
+		log.Printf("epoll wait warning: %v\n", err)
 	}
 	if n > 0 {
 		log.Printf("ae get %v epoll events\n", n)

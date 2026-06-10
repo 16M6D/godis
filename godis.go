@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 type CmdType = byte
@@ -78,6 +80,7 @@ func expireIfNeeded(key *Gobj) {
 	if when > GetMsTime() {
 		return
 	}
+	// key expire, delete it.
 	server.db.expire.Delete(key)
 	server.db.data.Delete(key)
 }
@@ -89,16 +92,16 @@ func findKeyRead(key *Gobj) *Gobj {
 
 func getCommand(c *GodisClient) {
 	key := c.args[1]
-	val := findKeyRead(key)
+	val := findKeyRead(key) // make sure key expire or not
 	if val == nil {
 		//TODO: extract shared.strings
 		c.AddReplyStr("$-1\r\n")
 	} else if val.Type_ != GSTR {
 		//TODO: extract shared.strings
-		c.AddReplyStr("-ERR: wrong type\r\n")
+		c.AddReplyStr("-ERR: wrong type\r\n") // use other cmd such as "hget"
 	} else {
 		str := val.StrVal()
-		c.AddReplyStr(fmt.Sprintf("$%d%v\r\n", len(str), str))
+		c.AddReplyStr(fmt.Sprintf("$%d%v\r\n", len(str), str)) // follow RESP
 	}
 }
 
@@ -129,6 +132,7 @@ func expireCommand(c *GodisClient) {
 }
 
 func lookupCommand(cmdStr string) *GodisCommand {
+	//TODO: case sensitive
 	for _, c := range cmdTable {
 		if c.name == cmdStr {
 			return &c
@@ -334,13 +338,20 @@ func ReadQueryFromClient(loop *AeLoop, fd int, extra interface{}) {
 	}
 	n, err := Read(fd, client.queryBuf[client.queryLen:])
 	if err != nil {
+		if err == unix.EAGAIN {
+			return
+		}
 		log.Printf("client %v read err: %v\n", fd, err)
+		freeClient(client)
+		return
+	}
+	if n == 0 {
+		log.Printf("client %v closed connection\n", fd)
 		freeClient(client)
 		return
 	}
 	client.queryLen += n
 	log.Printf("read %v bytes from client:%v\n", n, client.fd)
-	log.Printf("ReadQueryFromClient, queryBuf : %v\n", string(client.queryBuf))
 	err = ProcessQueryBuf(client)
 	if err != nil {
 		log.Printf("process query buf err: %v\n", err)
