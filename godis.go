@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"hash/fnv"
 	"log"
 	"strconv"
@@ -64,72 +63,29 @@ type GodisCommand struct {
 // Global Varibles
 var server GodisServer
 var cmdTable []GodisCommand = []GodisCommand{
+	// string commands
 	{"get", getCommand, 2},
 	{"set", setCommand, 3},
 	{"expire", expireCommand, 3},
+	{"del", delCommand, -2},
+	{"exists", existsCommand, -2},
+	{"incr", incrCommand, 2},
+	{"decr", decrCommand, 2},
+	// zset commands
+	{"zadd", zaddCommand, -4},
+	{"zcard", zcardCommand, 2},
+	{"zscore", zscoreCommand, 3},
+	{"zrank", zrankCommand, 3},
+	{"zrevrank", zrevrankCommand, 3},
+	{"zrange", zrangeCommand, -4},
+	{"zrevrange", zrevrangeCommand, -4},
+	{"zrangebyscore", zrangebyscoreCommand, -4},
+	{"zrevrangebyscore", zrevrangebyscoreCommand, -4},
+	{"zrem", zremCommand, -3},
+	{"zincrby", zincrbyCommand, 4},
+	// connection / server commands
 	{"ping", pingCommand, 1},
 	{"command", commandCommand, -1},
-	//TODO: add more commands here
-}
-
-func expireIfNeeded(key *Gobj) {
-	entry := server.db.expire.Find(key)
-	if entry == nil {
-		return
-	}
-	when := entry.Val.IntVal()
-	if when > GetMsTime() {
-		return
-	}
-	// key expire, delete it.
-	server.db.expire.Delete(key)
-	server.db.data.Delete(key)
-}
-
-func findKeyRead(key *Gobj) *Gobj {
-	expireIfNeeded(key)
-	return server.db.data.Get(key)
-}
-
-func getCommand(c *GodisClient) {
-	key := c.args[1]
-	val := findKeyRead(key) // make sure key expire or not
-	if val == nil {
-		//TODO: extract shared.strings
-		c.AddReplyStr("$-1\r\n")
-	} else if val.Type_ != GSTR {
-		//TODO: extract shared.strings
-		c.AddReplyStr("-ERR: wrong type\r\n") // use other cmd such as "hget"
-	} else {
-		str := val.StrVal()
-		c.AddReplyStr(fmt.Sprintf("$%d\r\n%v\r\n", len(str), str)) // follow RESP
-	}
-}
-
-func setCommand(c *GodisClient) {
-	key := c.args[1]
-	val := c.args[2]
-	if val.Type_ != GSTR {
-		//TODO: extract shared.strings
-		c.AddReplyStr("-ERR: wrong type\r\n")
-	}
-	server.db.data.Set(key, val)
-	server.db.expire.Delete(key)
-	c.AddReplyStr("+OK\r\n")
-}
-
-func expireCommand(c *GodisClient) {
-	key := c.args[1]
-	val := c.args[2]
-	if val.Type_ != GSTR {
-		//TODO: extract shared.strings
-		c.AddReplyStr("-ERR: wrong type\r\n")
-	}
-	expire := GetMsTime() + (val.IntVal() * 1000)
-	expObj := CreateFromInt(expire)
-	server.db.expire.Set(key, expObj)
-	expObj.DecrRefCount()
-	c.AddReplyStr("+OK\r\n")
 }
 
 func pingCommand(c *GodisClient) {
@@ -173,6 +129,10 @@ func ProcessCommand(c *GodisClient) {
 	cmd := lookupCommand(cmdStr)
 	if cmd == nil {
 		c.AddReplyStr("-ERR: unknow command\r\n")
+		resetClient(c)
+		return
+	} else if cmd.arity < 0 && len(c.args) < -cmd.arity {
+		c.AddReplyStr("-ERR: wrong number of args\r\n")
 		resetClient(c)
 		return
 	} else if cmd.arity > 0 && cmd.arity != len(c.args) {
