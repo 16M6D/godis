@@ -4,6 +4,8 @@ import (
 	"errors"
 	"hash/fnv"
 	"log"
+	"net/http"
+	_ "net/http/pprof"
 	"strconv"
 	"strings"
 	"time"
@@ -121,7 +123,7 @@ func (c *GodisClient) AddReplyStr(str string) {
 
 func ProcessCommand(c *GodisClient) {
 	cmdStr := c.args[0].StrVal()
-	log.Printf("process command: %v\n", cmdStr)
+	debugf("process command: %v", cmdStr)
 	if strings.EqualFold(cmdStr, "quit") {
 		freeClient(c)
 		return
@@ -322,7 +324,7 @@ func ReadQueryFromClient(loop *AeLoop, fd int, extra interface{}) {
 		return
 	}
 	client.queryLen += n
-	log.Printf("read %v bytes from client:%v\n", n, client.fd)
+	debugf("read %v bytes from client:%v", n, client.fd)
 	err = ProcessQueryBuf(client)
 	if err != nil {
 		log.Printf("process query buf err: %v\n", err)
@@ -333,7 +335,7 @@ func ReadQueryFromClient(loop *AeLoop, fd int, extra interface{}) {
 
 func SendReplyToClient(loop *AeLoop, fd int, extra interface{}) {
 	client := extra.(*GodisClient)
-	log.Printf("SendReplyToClient, reply len:%v\n", client.reply.Length())
+	debugf("SendReplyToClient, reply len:%v", client.reply.Length())
 	for client.reply.Length() > 0 {
 		rep := client.reply.First()
 		buf := []byte(rep.Val.StrVal())
@@ -346,7 +348,7 @@ func SendReplyToClient(loop *AeLoop, fd int, extra interface{}) {
 				return
 			}
 			client.sentLen += n
-			log.Printf("send %v bytes to client:%v\n", n, client.fd)
+			debugf("send %v bytes to client:%v", n, client.fd)
 			if client.sentLen == bufLen {
 				client.reply.DelNode(rep)
 				rep.Val.DecrRefCount()
@@ -442,6 +444,11 @@ func main() {
 	}
 	server.aeLoop.AddFileEvent(server.fd, AE_READABLE, AcceptHandler, nil)
 	server.aeLoop.AddTimeEvent(AE_NORMAL, 100, ServerCron, nil)
+	// pprof endpoint for performance profiling (negligible overhead when idle)
+	go func() {
+		log.Println("pprof listening on http://localhost:6658/debug/pprof/")
+		log.Println(http.ListenAndServe(":6658", nil))
+	}()
 	log.Println("godis server is up, running on 6657.")
 	server.aeLoop.AeMain()
 }

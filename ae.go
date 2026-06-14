@@ -7,6 +7,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// Note: per-request debug logging is controlled by the Debug flag in debug.go.
+// Hot-path event logs (add/remove file event, epoll wait counts, process ticks)
+// use debugf() and are skipped in production.
+
 type FeType int // FileEvent Type : readable or writable
 
 const (
@@ -98,7 +102,7 @@ func (loop *AeLoop) AddFileEvent(fd int, mask FeType, proc FileProc, extra inter
 	fe.proc = proc
 	fe.extra = extra
 	loop.FileEvents[getFeKey(fd, mask)] = &fe
-	log.Printf("ae add file event fd:%v, mask:%v\n", fd, mask) // consistency for ae ctl and epoll register
+	debugf("ae add file event fd:%v, mask:%v", fd, mask)
 }
 
 func (loop *AeLoop) RemoveFileEvent(fd int, mask FeType) {
@@ -115,7 +119,7 @@ func (loop *AeLoop) RemoveFileEvent(fd int, mask FeType) {
 	}
 	// ae ctl
 	loop.FileEvents[getFeKey(fd, mask)] = nil
-	log.Printf("ae remove file event fd:%v, mask:%v\n", fd, mask)
+	debugf("ae remove file event fd:%v, mask:%v", fd, mask)
 }
 
 func GetMsTime() int64 {
@@ -192,7 +196,7 @@ func (loop *AeLoop) AeWait() (tes []*AeTimeEvent, fes []*AeFileEvent) {
 		log.Printf("epoll wait warning: %v\n", err)
 	}
 	if n > 0 {
-		log.Printf("ae get %v epoll events\n", n)
+		debugf("ae get %v epoll events", n)
 	}
 	// collect file events
 	for i := 0; i < n; i++ {
@@ -233,7 +237,7 @@ func (loop *AeLoop) AeProcess(tes []*AeTimeEvent, fes []*AeFileEvent) {
 		}
 	}
 	if len(fes) > 0 {
-		log.Println("ae is processing file events")
+		debugf("ae is processing file events")
 		for _, fe := range fes {
 			fe.proc(loop, fe.fd, fe.extra)
 		}
